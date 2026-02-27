@@ -1,0 +1,35 @@
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: finance_db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-finance}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-finance_secret}
+      POSTGRES_DB: ${POSTGRES_DB:-finance_db}
+    ports:
+      - "${DB_PORT:-5432}:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-finance}"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  mcp:
+    build: .
+    container_name: finance_mcp
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-finance}:${POSTGRES_PASSWORD:-finance_secret}@db:5432/${POSTGRES_DB:-finance_db}
+      MCP_TRANSPORT: ${MCP_TRANSPORT:-streamable_http}
+      MCP_PORT: ${MCP_PORT:-8000}
+    ports:
+      - "${MCP_PORT:-8000}:${MCP_PORT:-8000}"
+
+volumes:
+  pgdata:
