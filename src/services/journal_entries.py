@@ -23,7 +23,8 @@ class JournalEntryService:
         """Create a journal entry with its lines inside a single transaction.
 
         If *auto_post* is True, the entry is immediately posted (triggers the
-        database-level balance check).
+        database-level balance check). If balance check fails, returns detailed
+        error with actual totals.
         """
         pool = await get_pool()
         async with pool.acquire() as conn:
@@ -57,10 +58,29 @@ class JournalEntryService:
 
                 # 3) Optionally post (triggers balance check via DB trigger)
                 if auto_post:
-                    await conn.execute(
-                        "UPDATE journal_entries SET is_posted = TRUE WHERE id = $1::uuid",
-                        je_id,
-                    )
+                    try:
+                        await conn.execute(
+                            "UPDATE journal_entries SET is_posted = TRUE WHERE id = $1::uuid",
+                            je_id,
+                        )
+                    except Exception as e:
+                        # If balance check failed, provide context
+                        if "unbalanced" in str(e).lower():
+                            total_debit = sum(float(line.get("debit", 0)) for line in inserted_lines)
+                            total_credit = sum(float(line.get("credit", 0)) for line in inserted_lines)
+                            difference = abs(total_debit - total_credit)
+                            return {
+                                "error": (
+                                    f"Journal entry is unbalanced:\n"
+                                    f"  Total debits:  {total_debit:,.2f}\n"
+                                    f"  Total credits: {total_credit:,.2f}\n"
+                                    f"  Difference:    {difference:,.2f}\n"
+                                    f"\nAdjust the amounts so debits equal credits, then post again."
+                                ),
+                                "entry_id": je_id,
+                                "created_as_draft": True,
+                            }
+                        raise
 
                 je = dict(je_row)
                 je["is_posted"] = auto_post
@@ -141,7 +161,10 @@ class JournalEntryService:
 
     @staticmethod
     async def post(journal_entry_id: str) -> dict[str, Any]:
-        """Post a draft journal entry (triggers balance check)."""
+        """Post a draft journal entry (triggers balance check).
+
+        If the entry is unbalanced, returns detailed error with totals.
+        """
         pool = await get_pool()
         try:
             row = await pool.fetchrow(
@@ -156,7 +179,30 @@ class JournalEntryService:
                 return {"error": "Entry not found or already posted."}
             return dict(row)
         except Exception as e:
-            return {"error": str(e)}
+            error_msg = str(e)
+            # If it's a balance error, provide detailed context
+            if "unbalanced" in error_msg.lower():
+                # Fetch the lines to calculate actual totals
+                lines = await pool.fetch(
+                    """
+                    SELECT debit, credit FROM journal_entry_lines
+                    WHERE journal_entry_id = $1::uuid
+                    """,
+                    journal_entry_id,
+                )
+                total_debit = sum(float(line["debit"]) for line in lines)
+                total_credit = sum(float(line["credit"]) for line in lines)
+                difference = abs(total_debit - total_credit)
+                return {
+                    "error": (
+                        f"Journal entry is unbalanced:\n"
+                        f"  Total debits:  {total_debit:,.2f}\n"
+                        f"  Total credits: {total_credit:,.2f}\n"
+                        f"  Difference:    {difference:,.2f}\n"
+                        f"\nReview the lines and adjust amounts so debits equal credits."
+                    )
+                }
+            return {"error": error_msg}
 
     @staticmethod
     async def void(journal_entry_id: str) -> dict[str, Any]:
