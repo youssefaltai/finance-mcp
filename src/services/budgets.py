@@ -18,22 +18,20 @@ class BudgetService:
         year: int,
         month: int,
         amount: float,
-        currency: str = "USD",
         notes: str = "",
     ) -> dict[str, Any]:
         pool = await get_pool()
         row = await pool.fetchrow(
             """
-            INSERT INTO budgets (account_id, year, month, amount, currency, notes)
-            VALUES ($1::uuid, $2, $3, $4, $5, $6)
+            INSERT INTO budgets (account_id, year, month, amount, notes)
+            VALUES ($1::uuid, $2, $3, $4, $5)
             ON CONFLICT (account_id, year, month)
             DO UPDATE SET amount = EXCLUDED.amount,
-                         currency = EXCLUDED.currency,
                          notes = EXCLUDED.notes,
                          updated_at = now()
             RETURNING *
             """,
-            account_id, year, month, amount, currency, notes,
+            account_id, year, month, amount, notes,
         )
         return dict(row)
 
@@ -99,7 +97,6 @@ class BudgetService:
                 a.name AS account_name,
                 a.account_type,
                 b.amount   AS budgeted,
-                b.currency,
                 COALESCE(act.actual_debit, 0)  AS actual_debit,
                 COALESCE(act.actual_credit, 0) AS actual_credit
             FROM budgets b
@@ -128,7 +125,6 @@ class BudgetService:
                 "actual": actual,
                 "variance": variance,
                 "pct_used": round((actual / budgeted * 100), 1) if budgeted else 0.0,
-                "currency": r["currency"],
             })
         return results
 
@@ -139,7 +135,7 @@ class BudgetService:
         return (
             f"**{b.get('account_name', b['account_id'])}** - "
             f"{b['year']}/{b['month']:02d}: "
-            f"{float(b['amount']):,.2f} {b.get('currency', 'USD')}"
+            f"{float(b['amount']):,.2f}"
         )
 
     @staticmethod

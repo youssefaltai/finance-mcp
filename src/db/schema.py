@@ -19,6 +19,10 @@ SCHEMA_SQL = """
 -- Enable UUID generation
 CREATE EXTENSION IF NOT EXISTS "pgcrypto";
 
+-- ─── Migration: Remove currency support (EGP-only, implicit) ───────
+ALTER TABLE accounts DROP COLUMN IF EXISTS currency;
+ALTER TABLE budgets DROP COLUMN IF EXISTS currency;
+
 -- ─── Account Types ───────────────────────────────────────────────
 DO $$ BEGIN
     CREATE TYPE account_type AS ENUM (
@@ -32,7 +36,6 @@ CREATE TABLE IF NOT EXISTS accounts (
     id            UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     name          TEXT        NOT NULL UNIQUE,
     account_type  account_type NOT NULL,
-    currency      TEXT        NOT NULL DEFAULT 'USD',
     parent_id     UUID        REFERENCES accounts(id) ON DELETE SET NULL,
     is_active     BOOLEAN     NOT NULL DEFAULT TRUE,
     created_at    TIMESTAMPTZ NOT NULL DEFAULT now(),
@@ -92,7 +95,6 @@ CREATE TABLE IF NOT EXISTS budgets (
     year          INT         NOT NULL,
     month         INT         NOT NULL CHECK (month BETWEEN 1 AND 12),
     amount        NUMERIC(15, 2) NOT NULL DEFAULT 0,
-    currency      TEXT        NOT NULL DEFAULT 'USD',
     notes         TEXT        NOT NULL DEFAULT '',
     created_at    TIMESTAMPTZ NOT NULL DEFAULT now(),
     updated_at    TIMESTAMPTZ NOT NULL DEFAULT now(),

@@ -33,8 +33,8 @@ def register(mcp: FastMCP) -> None:
 
         Args:
             params (CreateAccountInput): Contains name, account_type
-                (asset|liability|equity|income|expense), currency (default USD),
-                and optional parent_id for sub-accounts.
+                (asset|liability|equity|income|expense), and optional parent_id
+                for sub-accounts.
 
         Returns:
             str: JSON of the newly created account record.
@@ -43,7 +43,6 @@ def register(mcp: FastMCP) -> None:
             acc = await AccountService.create(
                 name=params.name,
                 account_type=params.account_type.value,
-                currency=params.currency,
                 parent_id=params.parent_id,
             )
             return to_json(acc)
@@ -175,7 +174,7 @@ def register(mcp: FastMCP) -> None:
                 return to_json(result)
             return (
                 f"**{result['name']}** ({result['account_type']})\n"
-                f"Balance: **{result['balance']:,.2f} {result['currency']}**\n"
+                f"Balance: **{result['balance']:,.2f}**\n"
                 f"Total debits: {result['total_debit']:,.2f} | "
                 f"Total credits: {result['total_credit']:,.2f}\n"
                 f"As of: {result['as_of_date']}"

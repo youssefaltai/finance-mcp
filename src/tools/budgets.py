@@ -35,7 +35,7 @@ def register(mcp: FastMCP) -> None:
 
         Args:
             params (SetBudgetInput): account_id, year, month (1-12),
-                amount (>= 0), currency, notes.
+                amount (>= 0), notes.
 
         Returns:
             str: JSON of the budget record.
@@ -46,7 +46,6 @@ def register(mcp: FastMCP) -> None:
                 year=params.year,
                 month=params.month,
                 amount=params.amount,
-                currency=params.currency,
                 notes=params.notes,
             )
             return to_json(b)

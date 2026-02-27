@@ -30,6 +30,13 @@ services:
       MCP_PORT: ${MCP_PORT:-8000}
     ports:
       - "${MCP_PORT:-8000}:${MCP_PORT:-8000}"
+    networks:
+      - default
+      - web
 
 volumes:
   pgdata:
+
+networks:
+  web:
+    external: true

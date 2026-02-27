@@ -17,18 +17,17 @@ class AccountService:
     async def create(
         name: str,
         account_type: str,
-        currency: str = "USD",
         parent_id: Optional[str] = None,
     ) -> dict[str, Any]:
         pool = await get_pool()
         row = await pool.fetchrow(
             """
-            INSERT INTO accounts (name, account_type, currency, parent_id)
-            VALUES ($1, $2::account_type, $3, $4::uuid)
-            RETURNING id, name, account_type, currency, parent_id, is_active,
+            INSERT INTO accounts (name, account_type, parent_id)
+            VALUES ($1, $2::account_type, $3::uuid)
+            RETURNING id, name, account_type, parent_id, is_active,
                       created_at, updated_at
             """,
-            name, account_type, currency, parent_id,
+            name, account_type, parent_id,
         )
         return dict(row)
 
@@ -114,7 +113,6 @@ class AccountService:
             SELECT
                 a.name,
                 a.account_type,
-                a.currency,
                 COALESCE(SUM(jel.debit), 0)  AS total_debit,
                 COALESCE(SUM(jel.credit), 0) AS total_credit
             FROM accounts a
@@ -142,7 +140,6 @@ class AccountService:
             "account_id": account_id,
             "name": row["name"],
             "account_type": atype,
-            "currency": row["currency"],
             "total_debit": total_debit,
             "total_credit": total_credit,
             "balance": balance,
@@ -155,6 +152,6 @@ class AccountService:
     def format_md(acc: dict[str, Any]) -> str:
         return (
             f"**{acc['name']}** (`{acc['id']}`)\n"
-            f"  Type: {acc['account_type']} | Currency: {acc['currency']} | "
+            f"  Type: {acc['account_type']} | "
             f"Active: {'yes' if acc['is_active'] else 'no'}"
         )

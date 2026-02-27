@@ -34,9 +34,6 @@ class CreateAccountInput(FinanceBaseModel):
     account_type: AccountType = Field(
         ..., description="One of: asset, liability, equity, income, expense",
     )
-    currency: str = Field(
-        default="USD", description="ISO 4217 currency code", min_length=3, max_length=3,
-    )
     parent_id: Optional[str] = Field(
         default=None, description="UUID of parent account for sub-accounts",
     )

@@ -15,7 +15,6 @@ class SetBudgetInput(FinanceBaseModel):
     year: int = Field(..., description="Budget year (e.g. 2026)", ge=2000, le=2100)
     month: int = Field(..., description="Budget month (1-12)", ge=1, le=12)
     amount: float = Field(..., description="Budget amount (≥ 0)", ge=0)
-    currency: str = Field(default="USD", min_length=3, max_length=3)
     notes: str = Field(default="", max_length=500)
 
 
