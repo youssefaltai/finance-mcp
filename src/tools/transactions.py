@@ -28,24 +28,41 @@ def register(mcp: FastMCP) -> None:
         },
     )
     async def finance_record_transaction(params: RecordTransactionInput) -> str:
-        """Record a financial transaction (e.g., purchase, payment, transfer).
+        """Record everyday spending, income, and transfers.
 
-        This is the primary way to log day-to-day financial activity. Under
-        the hood it creates a balanced journal entry: the debit_account is
-        debited and the credit_account is credited for the given amount.
+        **WHEN TO USE**: This is the primary way to record daily financial activity.
+        Use this for expenses, income, and transfers between accounts.
 
-        Example: Buying groceries for $50
-          debit_account_id  = <Groceries expense account UUID>
-          credit_account_id = <Checking asset account UUID>
-          amount = 50.00, payee = "Whole Foods", category = "groceries"
+        **DO NOT USE**: Don't use this for complex multi-account operations
+        (use journal entries instead).
+
+        **RULE**: Always think about WHERE money is going:
+        - SPENDING: Debit the expense account, credit the asset (e.g., Checking)
+        - INCOME: Debit the asset (e.g., Checking), credit the income account
+        - TRANSFER: Debit destination asset, credit source asset
+
+        **EXAMPLES**:
+        1. Spent $50 on groceries:
+           - Debit: Groceries (expense account)
+           - Credit: Checking (asset account)
+           - Amount: 50.00
+
+        2. Received $2000 salary:
+           - Debit: Checking (asset account)
+           - Credit: Salary (income account)
+           - Amount: 2000.00
+
+        3. Transferred $500 to savings:
+           - Debit: Savings (asset account)
+           - Credit: Checking (asset account)
+           - Amount: 500.00
 
         Args:
             params (RecordTransactionInput): date, amount (>0),
-                debit_account_id, credit_account_id, payee, description,
-                category.
+                debit_account_id, credit_account_id, payee, description, category
 
         Returns:
-            str: JSON of the created transaction and linked journal entry ID.
+            str: JSON of the created transaction with its journal entry ID.
         """
         try:
             txn = await TransactionService.record(

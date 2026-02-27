@@ -29,15 +29,27 @@ def register(mcp: FastMCP) -> None:
         },
     )
     async def finance_create_account(params: CreateAccountInput) -> str:
-        """Create a new account in the chart of accounts.
+        """Create a new account to track money flow.
+
+        **WHEN TO USE**: Before recording any transactions, set up your accounts.
+        **ACCOUNT TYPES**:
+        - asset: Money you own (Checking, Savings, Cash, Credit Card)
+        - expense: Money you spend (Groceries, Gas, Rent, Entertainment)
+        - income: Money you earn (Salary, Freelance, Bonus)
+        - liability: Money you owe (Credit Card, Loan)
+        - equity: Starting balance / net worth
+
+        **EXAMPLES**:
+        - "Create a Checking account (asset) to track my bank account"
+        - "Create a Groceries account (expense) to track grocery spending"
+        - "Create a Salary account (income) to track paychecks"
 
         Args:
-            params (CreateAccountInput): Contains name, account_type
-                (asset|liability|equity|income|expense), and optional parent_id
-                for sub-accounts.
+            params (CreateAccountInput): name, account_type
+                (asset|liability|equity|income|expense), optional parent_id
 
         Returns:
-            str: JSON of the newly created account record.
+            str: JSON of the newly created account with ID.
         """
         try:
             acc = await AccountService.create(
@@ -151,17 +163,24 @@ def register(mcp: FastMCP) -> None:
         },
     )
     async def finance_get_account_balance(params: GetAccountBalanceInput) -> str:
-        """Compute the running balance of an account from posted journal entries.
+        """Check how much money is in an account.
 
-        For asset/expense accounts: balance = debits - credits.
-        For liability/income/equity accounts: balance = credits - debits.
+        **WHEN TO USE**: After recording transactions, check balances to verify.
+        **INTERPRETATION**:
+        - Asset (Checking): Higher balance = more money in the account
+        - Expense (Groceries): Higher balance = more money spent on groceries
+        - Income (Salary): Higher balance = more money earned
+
+        **EXAMPLES**:
+        - "What's my Checking account balance?" → Shows money available
+        - "How much have I spent on groceries?" → Shows balance in Groceries account
 
         Args:
             params (GetAccountBalanceInput): account_id, optional as_of_date (YYYY-MM-DD),
-                response_format.
+                response_format (markdown/json)
 
         Returns:
-            str: Balance summary with totals.
+            str: Current balance, total debits, total credits, and date.
         """
         try:
             result = await AccountService.balance(

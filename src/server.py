@@ -20,6 +20,7 @@ from .tools import (
     register_journal_tools,
     register_transaction_tools,
     register_budget_tools,
+    register_guidance_tools,
 )
 
 
@@ -47,6 +48,7 @@ mcp = FastMCP(
     port=port,
 )
 
+register_guidance_tools(mcp)
 register_account_tools(mcp)
 register_journal_tools(mcp)
 register_transaction_tools(mcp)

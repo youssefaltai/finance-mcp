@@ -29,18 +29,36 @@ def register(mcp: FastMCP) -> None:
         },
     )
     async def finance_create_journal_entry(params: CreateJournalEntryInput) -> str:
-        """Create a journal entry with debit and credit lines.
+        """Advanced tool for multi-account operations (rarely needed).
 
-        The entry must balance (total debits == total credits) if auto_post
-        is True. Each line targets an account_id with either a debit or credit
-        amount (not both).
+        **WHEN TO USE**: Only for complex transactions involving 3+ accounts.
+        Most of the time, use finance_record_transaction instead.
+
+        **DO NOT USE**: For simple expenses, income, or transfers (use transaction tool).
+
+        **RULE**: The entry MUST BALANCE - total debits must equal total credits.
+        If it doesn't balance, you'll get an error with the actual totals to help you fix it.
+
+        **EXAMPLES** (when you'd actually use this):
+        1. Paying an invoice from a credit card with a service fee:
+           - Debit: Bill Payable account (liability)
+           - Debit: Service Fees expense account
+           - Credit: Credit Card account
+           Total debits must equal total credits
+
+        2. Complex opening balance with multiple account types:
+           - Debit: Assets (Checking, Savings, etc.)
+           - Credit: Opening Balance Equity (or Loans, etc.)
+           Multiple accounts, but still balanced
 
         Args:
             params (CreateJournalEntryInput): date, description, lines
-                (list of {account_id, debit, credit, memo}), auto_post.
+                (minimum 2 lines, each with {account_id, debit, credit, memo}),
+                auto_post (True = post immediately)
 
         Returns:
             str: The created journal entry with all lines as JSON.
+            If auto_post=True and entry is unbalanced, returns error with totals.
         """
         try:
             lines = [line.model_dump() for line in params.lines]
